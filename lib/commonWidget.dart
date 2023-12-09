@@ -221,6 +221,7 @@ class AdminDrawer extends StatelessWidget {
             leading: const Icon(Icons.menu_book),
             title: const Text('Menu Card'),
             onTap: () {
+              Navigator.pushNamed(context, '/adminMenu');
             },
           ),
           ListTile(

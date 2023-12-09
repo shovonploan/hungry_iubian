@@ -123,10 +123,13 @@ class _CustomerProfileState extends State<CustomerProfile> {
           appBar: const CustomeAppBar(
             userName: 'Username',
           ),
-          drawer: const CustomerDrawer(
-            username: 'Username',
-            email: 'something@xy.xs',
-          ),
+          drawer: state.user.userType == 'customer'
+              ? CustomerDrawer(
+                  username: state.user.userName,
+                  email: state.user.email as String)
+              : AdminDrawer(
+                  username: state.user.userName,
+                  email: state.user.email as String),
           body: Center(
             child: Column(
               children: [

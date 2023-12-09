@@ -24,7 +24,7 @@ class _AdminHomeState extends State<AdminHome> {
             email: state.user.email as String,
           ),
           body: Center(
-            child: Text("Main content"),
+            child: Text("Welcome To Admin panel"),
             ),
         );
       }

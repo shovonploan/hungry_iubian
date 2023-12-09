@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hungry_iubian/cubits/cart.dart';
 import 'package:hungry_iubian/cubits/menu.dart';
 import 'package:hungry_iubian/cubits/session.dart';
+import 'package:hungry_iubian/pages/admin/menuCard.dart';
 import 'package:hungry_iubian/pages/cutomer/balance.dart';
 import 'package:hungry_iubian/pages/cutomer/home.dart';
 import 'package:hungry_iubian/pages/cutomer/menu.dart';
@@ -56,6 +57,11 @@ class MyApp extends StatelessWidget {
           else if (settings.name == '/customerOrder') {
             return MaterialPageRoute(
               builder: (context) => const CustomerOrders(),
+            );
+          }
+          else if (settings.name == '/adminMenu') {
+            return MaterialPageRoute(
+              builder: (context) => const AdminMenucard(),
             );
           }
           return MaterialPageRoute(
