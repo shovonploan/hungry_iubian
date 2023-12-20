@@ -133,7 +133,7 @@ LEFT JOIN
 LEFT JOIN
 	users u ON u.userId = o.userId
 LEFT JOIN 
-	discount di ON di.discountId = ud.discountId
+	discount di ON di.discountId = ud.discountId;
 
 INSERT IGNORE INTO DISCOUNT ( discountType, amount, name, code, startDate, endDate, isActive, quantity, minimumTotal) VALUES
   ('Flat', 10.0, 'Flat Discount 1', 'FLAT10', '2023-01-01', '2023-02-01', 1, 100, 50.0),

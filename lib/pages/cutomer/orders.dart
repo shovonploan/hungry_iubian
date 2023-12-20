@@ -44,10 +44,16 @@ class _CustomerOrdersState extends State<CustomerOrders> {
   }
 
   @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return BlocBuilder<SessionCubit, Session>(
       builder: (context, state) {
         if (state is SessionValue) {
+        getOrder(state.user.userId as int);
           return DashboardSkeleton(
               body: ResponsiveBuilder(
                 builder: (context, sizingInformation) {

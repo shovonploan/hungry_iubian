@@ -1,9 +1,11 @@
 import 'package:collection/collection.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hungry_iubian/constants/constants.dart';
 import 'package:hungry_iubian/cubits/session.dart';
+import 'package:hungry_iubian/models/discount.dart';
 import 'package:hungry_iubian/models/orderInfo.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -17,6 +19,7 @@ class CustomerHome extends StatefulWidget {
 class CustomerHomeState extends State<CustomerHome> {
   List<List<OrderInfo>> orders = [];
   List<List<OrderInfo>> rateOrders = [];
+  List<Discount> discounts = [];
 
   Future<void> getOrder(int userId) async {
     try {
@@ -33,6 +36,19 @@ class CustomerHomeState extends State<CustomerHome> {
       });
     } catch (error) {
       print('Error: $error');
+    }
+  }
+
+  void getDiscounts() async {
+    try {
+      final response = await Dio().get('http://localhost:3000/discounts');
+      discounts = [];
+      for (var res in response.data) {
+        discounts.add(Discount.fromJson(res));
+      }
+      setState(() {});
+    } catch (error) {
+      print('Dio error: $error');
     }
   }
 
@@ -57,6 +73,7 @@ class CustomerHomeState extends State<CustomerHome> {
     return BlocBuilder<SessionCubit, Session>(builder: (context, state) {
       if (state is SessionValue) {
         getOrder(state.user.userId as int);
+        getDiscounts();
         return DashboardSkeleton(
           body: Center(
             child: ResponsiveBuilder(
@@ -69,7 +86,57 @@ class CustomerHomeState extends State<CustomerHome> {
                         context,
                         "Discount Offers",
                         headingStyle(context),
-                        const noItems(),
+                        discounts.isEmpty
+                            ? const noItems()
+                            : SizedBox(
+                                height:
+                                    sizingInformation.screenSize.height * 0.2,
+                                width: sizingInformation.screenSize.width * 0.8,
+                                child: ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: discounts.length,
+                                  itemBuilder: (context, index) {
+                                    return Padding(
+                                      padding:
+                                          EdgeInsets.only(left: 5, right: 5),
+                                      child: Column(
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Text("Discount Name"),
+                                              SizedBox(width: 10),
+                                              Text(discounts[index].name),
+                                            ],
+                                          ),
+                                          Row(
+                                            children: [
+                                              Text("Discount Type"),
+                                              SizedBox(width: 10),
+                                              Text(discounts[index]
+                                                  .discountType),
+                                            ],
+                                          ),
+                                          Row(
+                                            children: [
+                                              Text("Discount Amount"),
+                                              SizedBox(width: 10),
+                                              Text(
+                                                  "${discounts[index].amount}"),
+                                            ],
+                                          ),
+                                          Row(
+                                            children: [
+                                              Text("Discount Code"),
+                                              SizedBox(width: 10),
+                                              Text(discounts[index].code),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
                         sizingInformation,
                       ),
                       responsiveContainer(
