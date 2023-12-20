@@ -2,9 +2,10 @@ import 'package:collection/collection.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hungry_iubian/commonWidget.dart';
+import 'package:hungry_iubian/constants/constants.dart';
 import 'package:hungry_iubian/cubits/session.dart';
 import 'package:hungry_iubian/models/orderInfo.dart';
+import 'package:responsive_builder/responsive_builder.dart';
 
 class CustomerHome extends StatefulWidget {
   const CustomerHome({super.key});
@@ -56,163 +57,71 @@ class CustomerHomeState extends State<CustomerHome> {
     return BlocBuilder<SessionCubit, Session>(builder: (context, state) {
       if (state is SessionValue) {
         getOrder(state.user.userId as int);
-        return Scaffold(
-          appBar: CustomeAppBar(
-            userName: state.user.userName,
-          ),
-          drawer: CustomerDrawer(
-            username: state.user.userName,
-            email: state.user.email as String,
-          ),
+        return DashboardSkeleton(
           body: Center(
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  Container(
-                    width: MediaQuery.of(context).size.width * 0.5,
-                    margin: const EdgeInsets.all(10.0),
-                    padding: const EdgeInsets.all(6.0),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10.0),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.5),
-                          spreadRadius: 2,
-                          blurRadius: 5,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Column(children: [
-                      Text(
+            child: ResponsiveBuilder(
+              builder: (context, sizingInformation) {
+                return SingleChildScrollView(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      responsiveContainer(
+                        context,
                         "Discount Offers",
-                        style: headingStyle(),
+                        headingStyle(context),
+                        const noItems(),
+                        sizingInformation,
                       ),
-                      const noItems()
-                    ]),
-                  ),
-                  Container(
-                    width: MediaQuery.of(context).size.width * 0.5,
-                    margin: const EdgeInsets.all(10.0),
-                    padding: const EdgeInsets.all(6.0),
-                    decoration: BoxDecoration(
-                      color: const Color.fromARGB(255, 231, 231, 231),
-                      borderRadius: BorderRadius.circular(10.0),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.5),
-                          spreadRadius: 2,
-                          blurRadius: 5,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Column(children: [
-                      Text(
+                      responsiveContainer(
+                        context,
                         "Recent Orders",
-                        style: headingStyle(),
-                      ),
-                      orders.isEmpty
-                          ? const noItems()
-                          : SizedBox(
-                              height: MediaQuery.of(context).size.height * 0.4,
-                              width: MediaQuery.of(context).size.width * 0.4,
-                              child: ListView.builder(
-                                itemCount: orders.length,
-                                itemBuilder: (context, index) {
-                                  return foodCard(orders[index]);
-                                },
+                        headingStyle(context),
+                        orders.isEmpty
+                            ? const noItems()
+                            : SizedBox(
+                                height:
+                                    sizingInformation.screenSize.height * 0.4,
+                                width: sizingInformation.screenSize.width * 0.8,
+                                child: ListView.builder(
+                                  itemCount: orders.length,
+                                  itemBuilder: (context, index) {
+                                    return foodCard(context, orders[index]);
+                                  },
+                                ),
                               ),
-                            )
-                    ]),
-                  ),
-                  Container(
-                    width: MediaQuery.of(context).size.width * 0.5,
-                    margin: const EdgeInsets.all(10.0),
-                    padding: const EdgeInsets.all(6.0),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10.0),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.5),
-                          spreadRadius: 2,
-                          blurRadius: 5,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Column(children: [
-                      Text(
+                        sizingInformation,
+                      ),
+                      responsiveContainer(
+                        context,
                         "Order To Rate",
-                        style: headingStyle(),
+                        headingStyle(context),
+                        rateOrders.isEmpty
+                            ? const noItems()
+                            : SizedBox(
+                                height:
+                                    sizingInformation.screenSize.height * 0.4,
+                                width: sizingInformation.screenSize.width * 0.4,
+                                child: ListView.builder(
+                                  itemCount: rateOrders.length,
+                                  itemBuilder: (context, index) {
+                                    return foodCard(context, rateOrders[index]);
+                                  },
+                                ),
+                              ),
+                        sizingInformation,
                       ),
-                      rateOrders.isEmpty
-                          ? const noItems()
-                          : SizedBox(
-                              height: MediaQuery.of(context).size.height * 0.4,
-                              width: MediaQuery.of(context).size.width * 0.4,
-                              child: ListView.builder(
-                                itemCount: rateOrders.length,
-                                itemBuilder: (context, index) {
-                                  return foodCard(rateOrders[index]);
-                                },
-                              ),
-                            )
-                    ]),
+                      responsiveCreditContainer(
+                        context,
+                        state.user.credit as double,
+                        sizingInformation,
+                      ),
+                    ],
                   ),
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    width: MediaQuery.of(context).size.width * 0.15,
-                    margin: const EdgeInsets.all(10.0),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10.0),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.5),
-                          spreadRadius: 2,
-                          blurRadius: 5,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        Image.asset(
-                          'assets/images/credit.jpg',
-                          width: double.infinity,
-                          height: 200.0,
-                          fit: BoxFit.fill,
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            children: [
-                              const Text(
-                                'User Credit Balance',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                '${state.user.credit} Taka',
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                );
+              },
             ),
           ),
+          user: state.user,
         );
       }
       if (state is SessionValue) {
@@ -222,12 +131,105 @@ class CustomerHomeState extends State<CustomerHome> {
     });
   }
 
-  TextStyle headingStyle() => const TextStyle(
-      color: Colors.blueGrey, fontWeight: FontWeight.bold, fontSize: 20);
-  Widget foodCard(List<OrderInfo> order) {
+  Widget responsiveContainer(
+      BuildContext context,
+      String title,
+      TextStyle textStyle,
+      Widget content,
+      SizingInformation sizingInformation) {
     return Container(
-      constraints: const BoxConstraints(
-        maxWidth: 300.0,
+      width: sizingInformation.screenSize.width * 0.8,
+      margin: const EdgeInsets.all(10.0),
+      padding: const EdgeInsets.all(6.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.5),
+            spreadRadius: 2,
+            blurRadius: 5,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(
+            title,
+            style: textStyle,
+          ),
+          content,
+        ],
+      ),
+    );
+  }
+
+  Widget responsiveCreditContainer(BuildContext context, double credit,
+      SizingInformation sizingInformation) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      width: isDesktop(sizingInformation)
+          ? sizingInformation.screenSize.width * 0.15
+          : sizingInformation.screenSize.width * 0.5,
+      margin: const EdgeInsets.all(10.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.5),
+            spreadRadius: 2,
+            blurRadius: 5,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Image.asset(
+            'assets/images/credit.jpg',
+            width: double.infinity,
+            height: 200.0,
+            fit: BoxFit.fill,
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                const Text(
+                  'User Credit Balance',
+                  style: TextStyle(
+                    color: Colors.black,
+                  ),
+                ),
+                Text(
+                  '$credit Taka',
+                  style: const TextStyle(
+                    color: Colors.black,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  TextStyle headingStyle(BuildContext context) {
+    return TextStyle(
+      color: Colors.blueGrey,
+      fontWeight: FontWeight.bold,
+      fontSize: MediaQuery.of(context).size.width < 600 ? 16 : 20,
+    );
+  }
+
+  Widget foodCard(BuildContext context, List<OrderInfo> order) {
+    return Container(
+      constraints: BoxConstraints(
+        maxWidth:
+            MediaQuery.of(context).size.width < 600 ? double.infinity : 300.0,
       ),
       margin: const EdgeInsets.all(10.0),
       decoration: BoxDecoration(
@@ -259,12 +261,14 @@ class CustomerHomeState extends State<CustomerHome> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Iterate through each order and display order details
                       for (OrderInfo orderItem in order)
                         Text(
-                          'Name: ${orderItem.name}\nQuantity: ${orderItem.quantity}',
-                          style: const TextStyle(
+                          'Name: ${orderItem.discountName} Quantity: ${orderItem.quantity}',
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
+                            fontSize: MediaQuery.of(context).size.width < 600
+                                ? 12
+                                : 16,
                           ),
                         ),
                     ],
@@ -275,20 +279,20 @@ class CustomerHomeState extends State<CustomerHome> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                // Placeholder total amount (replace with actual logic)
                 Text(
-                  'Total: ${calculateTotal(order)} Taka', // Placeholder total amount
-                  style: const TextStyle(
+                  'Total: ${calculateTotal(order)} Taka',
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
+                    fontSize: MediaQuery.of(context).size.width < 600 ? 12 : 16,
                   ),
                 ),
                 const SizedBox(height: 8.0),
-                // Placeholder status (replace with actual logic)
                 Text(
                   'Status: ${calculateStatus(order)}', // Placeholder status
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.green, // Example color for success status
                     fontWeight: FontWeight.bold,
+                    fontSize: MediaQuery.of(context).size.width < 600 ? 12 : 16,
                   ),
                 ),
               ],
@@ -299,11 +303,9 @@ class CustomerHomeState extends State<CustomerHome> {
     );
   }
 
-// Placeholder function to calculate total amount
   double calculateTotal(List<OrderInfo> order) {
-    // Replace this with your actual logic to calculate the total amount
     return order
-        .map((orderItem) => orderItem.price * orderItem.quantity)
+        .map((orderItem) => orderItem.dishPrice * (orderItem.quantity as int))
         .reduce((a, b) => a + b);
   }
 

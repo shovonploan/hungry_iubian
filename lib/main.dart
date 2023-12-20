@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hungry_iubian/cubits/cart.dart';
-import 'package:hungry_iubian/cubits/menu.dart';
 import 'package:hungry_iubian/cubits/session.dart';
+import 'package:hungry_iubian/pages/admin/adminBalance.dart';
+import 'package:hungry_iubian/pages/admin/adminUser.dart';
+import 'package:hungry_iubian/pages/admin/allUsers.dart';
+import 'package:hungry_iubian/pages/admin/allorders.dart';
+import 'package:hungry_iubian/pages/admin/generateReport.dart';
 import 'package:hungry_iubian/pages/admin/menuCard.dart';
 import 'package:hungry_iubian/pages/cutomer/balance.dart';
+import 'package:hungry_iubian/pages/cutomer/discounts.dart';
 import 'package:hungry_iubian/pages/cutomer/home.dart';
 import 'package:hungry_iubian/pages/cutomer/menu.dart';
 import 'package:hungry_iubian/pages/cutomer/orders.dart';
@@ -23,7 +28,6 @@ class MyApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (ctx) => SessionCubit()),
-        BlocProvider(create: (ctx) => MenuCubit()),
         BlocProvider(create: (ctx) => CartCubit()),
       ],
       child: MaterialApp(
@@ -53,15 +57,39 @@ class MyApp extends StatelessWidget {
             return MaterialPageRoute(
               builder: (context) => const CustomerMenuCard(),
             );
-          }
-          else if (settings.name == '/customerOrder') {
+          } else if (settings.name == '/customerOrder') {
             return MaterialPageRoute(
               builder: (context) => const CustomerOrders(),
             );
-          }
-          else if (settings.name == '/adminMenu') {
+          } else if (settings.name == '/adminMenu') {
             return MaterialPageRoute(
               builder: (context) => const AdminMenucard(),
+            );
+          } else if (settings.name == '/adminBalance') {
+            return MaterialPageRoute(
+              builder: (context) => const AdminBalnce(),
+            );
+          } else if (settings.name == '/createUser') {
+            return MaterialPageRoute(
+              builder: (context) => const AdminUser(),
+            );
+          } else if (settings.name == '/allUser') {
+            return MaterialPageRoute(
+              builder: (context) => const AllUsers(),
+            );
+          } else if (settings.name == '/allOrdes') {
+            return MaterialPageRoute(
+              builder: (context) => const AllOrdes(),
+            );
+          }
+          else if (settings.name == '/discounts') {
+            return MaterialPageRoute(
+              builder: (context) => const DiscountsPage(),
+            );
+          }
+          else if (settings.name == '/report') {
+            return MaterialPageRoute(
+              builder: (context) => const GenerateReport(),
             );
           }
           return MaterialPageRoute(

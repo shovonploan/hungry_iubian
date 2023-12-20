@@ -2,11 +2,13 @@ import 'package:badges/badges.dart' as badges;
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hungry_iubian/commonWidget.dart';
+import 'package:hungry_iubian/constants/constants.dart';
 import 'package:hungry_iubian/cubits/cart.dart';
-import 'package:hungry_iubian/cubits/menu.dart';
 import 'package:hungry_iubian/cubits/session.dart';
+import 'package:hungry_iubian/models/discount.dart';
 import 'package:hungry_iubian/models/dish.dart';
+import 'package:intl/intl.dart';
+import 'package:responsive_builder/responsive_builder.dart';
 
 class CustomerMenuCard extends StatefulWidget {
   const CustomerMenuCard({super.key});
@@ -16,20 +18,66 @@ class CustomerMenuCard extends StatefulWidget {
 }
 
 class _CustomerMenuCardState extends State<CustomerMenuCard> {
-  final TextEditingController _dropdownController = TextEditingController();
+  List<Dish> dishes = [];
+  bool isPreOrder = false;
+  DateTime selectedDate = DateTime.now();
+  TimeOfDay selectedTime = TimeOfDay.now();
+  Future<void> getDishes() async {
+    try {
+      final response = await Dio().get(
+        'http://localhost:3000/userDishes',
+      );
+      dishes = [];
+      for (var res in response.data) {
+        dishes.add(Dish.fromJson(res));
+      }
+      setState(() {});
+    } catch (error) {
+      print('Error: $error');
+    }
+  }
 
-  double getTotal(List<DishQuantity> dishes) {
+  String formatDateTime() {
+    DateTime combinedDateTime = DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+      selectedTime.hour,
+      selectedTime.minute,
+    );
+    return DateFormat('yyyy-MM-dd HH:mm').format(combinedDateTime);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getDishes();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  double getTotal(List<DishQuantity> dishes, Discount? discount) {
     double total = 0;
     for (var element in dishes) {
       total += element.dish.price!.toInt() * element.quantity;
+    }
+    if (discount != null) {
+      if (discount.discountType == 'Percentage') {
+        total = total - (discount.amount / 100);
+      } else if (discount.discountType == 'Flat') {
+        total = total - discount.amount;
+      }
     }
     return total;
   }
 
   Future<void> createOrder(
     int userId,
-    bool isPreOrder,
     List<DishQuantity> dishQuantities,
+    Discount? discount,
   ) async {
     try {
       final response = await Dio().post(
@@ -38,6 +86,8 @@ class _CustomerMenuCardState extends State<CustomerMenuCard> {
           'userId': userId,
           'isPreOrder': isPreOrder,
           'dishQuantities': dishQuantities.map((dq) => dq.toJson()).toList(),
+          'deliveryTime': formatDateTime(),
+          'total': getTotal(dishQuantities, discount),
         },
       );
 
@@ -53,172 +103,308 @@ class _CustomerMenuCardState extends State<CustomerMenuCard> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SessionCubit, Session>(builder: (context, state) {
-      context.read<MenuCubit>().loadMenues();
-      if (state is SessionValue) {
-        return Scaffold(
-            appBar: CustomeAppBar(
-              userName: state.user.userName,
-            ),
-            drawer: CustomerDrawer(
-              username: state.user.userName,
-              email: state.user.email as String,
-            ),
-            body: BlocBuilder<MenuCubit, MenuState>(builder: (context, state) {
-              return Center(
+    return BlocBuilder<SessionCubit, Session>(
+      builder: (context, state) {
+        if (state is SessionValue) {
+          return ResponsiveBuilder(builder: (context, sizingInformation) {
+            return DashboardSkeleton(
+              body: Center(
                 child: ListView.builder(
-                  itemCount: state.dishes.length,
-                  itemBuilder: (ctx, idx) => foodCard(state.dishes[idx]),
+                  itemCount: dishes.length,
+                  itemBuilder: (ctx, idx) =>
+                      foodCard(sizingInformation, dishes[idx]),
                 ),
-              );
-            }),
-            floatingActionButton: BlocBuilder<CartCubit, CartState>(
-                builder: (context, cartState) {
-              return Padding(
-                padding: EdgeInsets.only(
-                    right: MediaQuery.of(context).size.width * 0.02),
-                child: badges.Badge(
-                  badgeContent: (cartState.dishes.isNotEmpty)
-                      ? Padding(
-                          padding: const EdgeInsets.all(2),
-                          child: Text(
-                            "${cartState.dishes.length}",
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold),
-                          ),
-                        )
-                      : Container(),
-                  badgeStyle: badges.BadgeStyle(
-                      badgeColor: (cartState.dishes.isNotEmpty)
-                          ? Colors.redAccent
-                          : Colors.transparent,
-                      elevation: 10),
-                  badgeAnimation: const badges.BadgeAnimation.slide(
-                    animationDuration: Duration(seconds: 1),
-                    colorChangeAnimationDuration: Duration(seconds: 1),
-                    loopAnimation: false,
-                    curve: Curves.fastOutSlowIn,
-                    colorChangeAnimationCurve: Curves.easeInCubic,
-                  ),
-                  child: FloatingActionButton(
-                    backgroundColor: const Color.fromARGB(255, 106, 149, 223),
-                    onPressed: () {
-                      showModalBottomSheet<void>(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return SizedBox(
-                            height: MediaQuery.of(context).size.height * 0.8,
-                            width: MediaQuery.of(context).size.width,
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Column(
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceAround,
+              ),
+              user: state.user,
+              floatingActionButton: BlocBuilder<CartCubit, CartState>(
+                  builder: (context, cartState) {
+                return Padding(
+                  padding: EdgeInsets.only(
+                      right: MediaQuery.of(context).size.width * 0.02),
+                  child: badges.Badge(
+                    badgeContent: (cartState.dishes.isNotEmpty)
+                        ? Padding(
+                            padding: const EdgeInsets.all(2),
+                            child: Text(
+                              "${cartState.dishes.length}",
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          )
+                        : Container(),
+                    badgeStyle: badges.BadgeStyle(
+                        badgeColor: (cartState.dishes.isNotEmpty)
+                            ? Colors.redAccent
+                            : Colors.transparent,
+                        elevation: 10),
+                    badgeAnimation: const badges.BadgeAnimation.slide(
+                      animationDuration: Duration(seconds: 1),
+                      colorChangeAnimationDuration: Duration(seconds: 1),
+                      loopAnimation: false,
+                      curve: Curves.fastOutSlowIn,
+                      colorChangeAnimationCurve: Curves.easeInCubic,
+                    ),
+                    child: FloatingActionButton(
+                      backgroundColor: const Color.fromARGB(255, 106, 149, 223),
+                      onPressed: () {
+                        showModalBottomSheet<void>(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return StatefulBuilder(
+                                builder: (context, setState) {
+                              return SizedBox(
+                                height:
+                                    MediaQuery.of(context).size.height * 0.8,
+                                width: MediaQuery.of(context).size.width,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Column(
                                     children: [
-                                      DropdownButton<String>(
-                                        value:
-                                            _dropdownController.text.isNotEmpty
-                                                ? _dropdownController.text
-                                                : null,
-                                        onChanged: (String? newValue) {
-                                          _dropdownController.text =
-                                              newValue ?? '';
-                                        },
-                                        items: <String>['Now', 'Pre-Order']
-                                            .map((String value) {
-                                          return DropdownMenuItem<String>(
-                                            value: value,
-                                            child: Text(value),
-                                          );
-                                        }).toList(),
-                                      ),
-                                      ElevatedButton(
-                                          onPressed: () {
-                                            var isPreOrder = false;
-                                            if (_dropdownController
-                                                    .text.isNotEmpty &&
-                                                _dropdownController.text ==
-                                                    'Pre-Order') {
-                                              isPreOrder = true;
-                                            }
-                                            if (cartState.dishes.isNotEmpty) {
-                                              createOrder(
-                                                  state.user.userId as int,
-                                                  isPreOrder,
-                                                  cartState.dishes);
-                                              context
-                                                  .read<CartCubit>()
-                                                  .resetCart();
-
-                                              context
-                                                  .read<MenuCubit>()
-                                                  .loadMenues();
-                                              Navigator.pop(context);
-                                            }
-                                          },
-                                          style: const ButtonStyle(
-                                            backgroundColor:
-                                                MaterialStatePropertyAll(
-                                                    Colors.blueAccent),
-                                          ),
-                                          child: const Text(
-                                            "Place Order",
-                                            style:
-                                                TextStyle(color: Colors.white),
-                                          )),
                                       Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceAround,
                                         children: [
-                                          const Text(
-                                            "Total ",
-                                            style: TextStyle(
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.black),
+                                          Row(
+                                            children: [
+                                              const Text("Now"),
+                                              const SizedBox(width: 5),
+                                              Switch(
+                                                value: isPreOrder,
+                                                onChanged: (value) {
+                                                  setState(() {
+                                                    isPreOrder = value;
+                                                    if (isPreOrder) {
+                                                      _selectDate(context);
+                                                    }
+                                                  });
+                                                },
+                                              ),
+                                              const SizedBox(width: 5),
+                                              const Text("Pre-Order"),
+                                            ],
                                           ),
-                                          const SizedBox(width: 10),
-                                          Text(
-                                            "${getTotal(cartState.dishes)} Taka",
-                                            style: const TextStyle(
-                                                fontSize: 24,
-                                                fontWeight: FontWeight.w500,
-                                                color: Colors.blueGrey),
+                                          (cartState.discount == null)
+                                              ? ElevatedButton(
+                                                  onPressed: () {
+                                                    getDiscountPopup(
+                                                        sizingInformation,
+                                                        context);
+                                                  },
+                                                  style: const ButtonStyle(
+                                                    backgroundColor:
+                                                        MaterialStatePropertyAll(
+                                                            Colors.blueAccent),
+                                                  ),
+                                                  child: const Text(
+                                                    "Discount",
+                                                    style: TextStyle(
+                                                        color: Colors.white),
+                                                  ),
+                                                )
+                                              : Row(
+                                                  children: [
+                                                    Text(cartState
+                                                        .discount!.code),
+                                                    IconButton(
+                                                        onPressed: () {
+                                                          context
+                                                              .read<CartCubit>()
+                                                              .removeDiscount();
+                                                        },
+                                                        icon: Icon(Icons.close,
+                                                            color: Colors.red))
+                                                  ],
+                                                ),
+                                          ElevatedButton(
+                                            onPressed: () {
+                                              if (cartState.dishes.isNotEmpty) {
+                                                createOrder(
+                                                  state.user.userId as int,
+                                                  cartState.dishes,
+                                                  cartState.discount,
+                                                )
+                                                    .then((value) => context
+                                                        .read<CartCubit>()
+                                                        .resetCart())
+                                                    .then(
+                                                        (value) => getDishes())
+                                                    .then((value) =>
+                                                        Navigator.pop(context));
+                                              }
+                                            },
+                                            style: const ButtonStyle(
+                                              backgroundColor:
+                                                  MaterialStatePropertyAll(
+                                                      Colors.blueAccent),
+                                            ),
+                                            child: const Text(
+                                              "Place Order",
+                                              style: TextStyle(
+                                                  color: Colors.white),
+                                            ),
+                                          ),
+                                          Row(
+                                            children: [
+                                              const Text(
+                                                "Total ",
+                                                style: TextStyle(
+                                                    fontSize: 20,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.black),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Text(
+                                                "${getTotal(cartState.dishes, cartState.discount)} Taka",
+                                                style: const TextStyle(
+                                                    fontSize: 24,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Colors.blueGrey),
+                                              ),
+                                            ],
                                           ),
                                         ],
                                       ),
+                                      const Divider(height: 5),
+                                      Expanded(
+                                        child: ListView.builder(
+                                            itemCount: cartState.dishes.length,
+                                            itemBuilder: (ctx, idx) => cartCard(
+                                                sizingInformation,
+                                                cartState.dishes[idx])),
+                                      ),
                                     ],
                                   ),
-                                  const Divider(height: 5),
-                                  Expanded(
-                                    child: ListView.builder(
-                                        itemCount: cartState.dishes.length,
-                                        itemBuilder: (ctx, idx) =>
-                                            cartCard(cartState.dishes[idx])),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                    child: const Icon(Icons.shopping_bag),
+                                ),
+                              );
+                            });
+                          },
+                        );
+                      },
+                      child: const Icon(Icons.shopping_bag),
+                    ),
                   ),
-                ),
-              );
-            }));
-      }
-      if (state is SessionValue) {
-        Navigator.pushNamed(context, "/");
-      }
-      return const Scaffold();
-    });
+                );
+              }),
+            );
+          });
+        } else if (state is SessionValue) {
+          Navigator.pushNamed(context, "/");
+        }
+        return const Scaffold();
+      },
+    );
   }
 
-  Widget foodCard(Dish dish) {
+  void getDiscountPopup(
+      SizingInformation sizingInformation, BuildContext context) {
+    String code = '';
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Add discount'),
+            content: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.2,
+              height: MediaQuery.of(context).size.height * 0.1,
+              child: Column(
+                children: [
+                  TextField(
+                    decoration: InputDecoration(
+                      labelText: 'Discount Code',
+                      hintText: "Discount Code",
+                      prefixIcon: Icon(Icons.numbers),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: const BorderSide(color: Colors.blue),
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
+                    ),
+                    keyboardType: TextInputType.datetime,
+                    onChanged: (value) {
+                      code = value;
+                    },
+                  )
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  if (code.isNotEmpty && code != '') {
+                    context.read<CartCubit>().addDiscount(code);
+                    Navigator.pop(context);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Enter Dicount Code'),
+                          backgroundColor: Colors.red),
+                    );
+                  }
+                },
+                child: const Text('Submit'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text('Cancel'),
+              ),
+            ],
+          );
+        });
+      },
+    );
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: selectedDate,
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2030),
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            primaryColor: Colors.blue,
+            buttonTheme:
+                const ButtonThemeData(textTheme: ButtonTextTheme.primary),
+            colorScheme: const ColorScheme.light(primary: Colors.blue)
+                .copyWith(secondary: Colors.blue),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (pickedDate != null) {
+      setState(() {
+        selectedDate = pickedDate;
+        _selectTime(context);
+      });
+    }
+  }
+
+  Future<void> _selectTime(BuildContext context) async {
+    TimeOfDay? pickedTime = await showTimePicker(
+      context: context,
+      initialTime: selectedTime,
+    );
+
+    if (pickedTime != null) {
+      setState(() {
+        selectedTime = pickedTime;
+      });
+    }
+  }
+
+  Widget foodCard(SizingInformation sizingInformation, Dish dish) {
+    double cardWidth = sizingInformation.screenSize.width * 0.8;
+    double imageWidth = cardWidth * 0.08;
     return Container(
       constraints: const BoxConstraints(
         maxWidth: 300.0,
@@ -244,11 +430,17 @@ class _CustomerMenuCardState extends State<CustomerMenuCard> {
             Container(
               child: Row(
                 children: [
-                  Image.asset(
-                    'assets/images/burger.jpg',
-                    width: 50.0,
-                    height: 50.0,
-                  ),
+                  (dish.images != null)
+                      ? Image.memory(
+                          dish.images!,
+                          width: imageWidth,
+                          height: imageWidth,
+                        )
+                      : Image.asset(
+                          'assets/images/burger.jpg',
+                          width: imageWidth,
+                          height: imageWidth,
+                        ),
                   const SizedBox(width: 15.0),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -338,7 +530,10 @@ class _CustomerMenuCardState extends State<CustomerMenuCard> {
     );
   }
 
-  Widget cartCard(DishQuantity dishQuantity) {
+  Widget cartCard(
+      SizingInformation sizingInformation, DishQuantity dishQuantity) {
+    double cardWidth = sizingInformation.screenSize.width * 0.8;
+    double imageWidth = cardWidth * 0.08;
     return Container(
       constraints: const BoxConstraints(
         maxWidth: 300.0,
@@ -364,11 +559,17 @@ class _CustomerMenuCardState extends State<CustomerMenuCard> {
             Container(
               child: Row(
                 children: [
-                  Image.asset(
-                    'assets/images/burger.jpg',
-                    width: 50.0,
-                    height: 50.0,
-                  ),
+                  (dishQuantity.dish.images != null)
+                      ? Image.memory(
+                          dishQuantity.dish.images!,
+                          width: imageWidth,
+                          height: imageWidth,
+                        )
+                      : Image.asset(
+                          'assets/images/burger.jpg',
+                          width: imageWidth,
+                          height: imageWidth,
+                        ),
                   const SizedBox(width: 15.0),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -407,6 +608,16 @@ class _CustomerMenuCardState extends State<CustomerMenuCard> {
                     fontSize: 18,
                   ),
                 ),
+                IconButton(
+                    onPressed: () {
+                      context
+                          .read<CartCubit>()
+                          .removeFromCart(dishQuantity.dish);
+                    },
+                    icon: Icon(
+                      Icons.delete_forever,
+                      color: Colors.red,
+                    ))
               ],
             ),
           ],

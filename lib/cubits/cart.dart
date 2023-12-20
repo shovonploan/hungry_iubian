@@ -1,5 +1,7 @@
 import 'package:bloc/bloc.dart';
+import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
+import 'package:hungry_iubian/models/discount.dart';
 import 'package:hungry_iubian/models/dish.dart';
 
 class DishQuantity {
@@ -17,25 +19,43 @@ class DishQuantity {
 
 abstract class CartState extends Equatable {
   final List<DishQuantity> dishes;
+  final Discount? discount;
 
-  const CartState(this.dishes);
+  const CartState(this.dishes, this.discount);
 
   @override
   List<Object?> get props => [dishes];
 }
 
 class CartInitial extends CartState {
-  CartInitial(List<DishQuantity> dishes) : super(dishes);
+  CartInitial(List<DishQuantity> dishes) : super(dishes, null);
 }
 
 class CartLoaded extends CartState {
-  CartLoaded(List<DishQuantity> dishes) : super(dishes);
+  CartLoaded(List<DishQuantity> dishes, Discount? discount)
+      : super(dishes, discount);
+}
+
+Future<Discount?> getDiscount(String discountCode) async {
+  try {
+    final response =
+        await Dio().get('http://localhost:3000/getDiscount', data: {
+      'code': discountCode,
+    });
+    if (response.data != []) {
+      return Discount.fromJson(response.data[0]);
+    }
+    return null;
+  } catch (error) {
+    print('Error: $error');
+    return null;
+  }
 }
 
 class CartCubit extends Cubit<CartState> {
   CartCubit() : super(CartInitial([]));
 
-  void resetCart(){
+  void resetCart() {
     emit(CartInitial([]));
   }
 
@@ -53,23 +73,28 @@ class CartCubit extends Cubit<CartState> {
       updatedDishes.add(DishQuantity(dish, 1));
     }
 
-    emit(CartLoaded(updatedDishes));
+    emit(CartLoaded(updatedDishes, state.discount));
   }
 
   void removeFromCart(Dish dish) {
     final List<DishQuantity> updatedDishes = List.from(state.dishes);
 
     for (var dishQuantity in updatedDishes) {
-      if (dishQuantity.dish == dish) {
-        if (dishQuantity.quantity > 1) {
-          dishQuantity = DishQuantity(dish, dishQuantity.quantity - 1);
-        } else {
-          updatedDishes.remove(dishQuantity);
-        }
+      if (dishQuantity.dish.dishId == dish.dishId) {
+        updatedDishes.remove(dishQuantity);
         break;
       }
     }
 
-    emit(CartLoaded(updatedDishes));
+    emit(CartLoaded(updatedDishes, state.discount));
+  }
+
+  void addDiscount(String discountCode) async {
+    var dis = await getDiscount(discountCode);
+    emit(CartLoaded(state.dishes, dis));
+  }
+
+  void removeDiscount() {
+    emit(CartLoaded(state.dishes, null));
   }
 }

@@ -1,20 +1,23 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 class Dish {
-  int? dishId;
+  final int dishId;
   DateTime? createdDate;
   DateTime? updatedDate;
   String? name;
   String? description;
-  String? images;
+  Uint8List? images;
   String? urlSlug;
   double? price;
   double? rating;
   String? tags;
   int? quantityLeft;
   int? requestedQuantity;
-  int? dishTypeId;
+  String? dishType;
 
   Dish({
-    this.dishId,
+    required this.dishId,
     this.createdDate,
     this.updatedDate,
     this.name,
@@ -26,28 +29,38 @@ class Dish {
     this.tags,
     this.quantityLeft,
     this.requestedQuantity,
-    this.dishTypeId,
+    this.dishType,
   });
+
+  static Uint8List? _decodeBytes(List<dynamic> bytesList) {
+    if (bytesList == null || bytesList.isEmpty) {
+      return null;
+    }
+    List<int> intList = List<int>.from(bytesList.cast<int>());
+    return Uint8List.fromList(intList);
+  }
 
   factory Dish.fromJson(Map<String, dynamic> json) {
     return Dish(
       dishId: json['dishId'],
-      createdDate: json['createdDate'] != null
+      createdDate: (json['createdDate'] != null)
           ? DateTime.parse(json['createdDate'])
           : null,
-      updatedDate: json['updatedDate'] != null
+      updatedDate: (json['updatedDate'] != null)
           ? DateTime.parse(json['updatedDate'])
           : null,
       name: json['name'],
       description: json['description'],
-      images: json['images'],
+      images: (json['images'] != null)
+          ? _decodeBytes(json['images']['data'])
+          : json['images'],
       urlSlug: json['urlSlug'],
-      price: json['price']?.toDouble(),
-      rating: json['rating']?.toDouble(),
+      price: json['price'].toDouble(),
+      rating: json['rating'].toDouble(),
       tags: json['tags'],
       quantityLeft: json['quantityLeft'],
       requestedQuantity: json['requestedQuantity'],
-      dishTypeId: json['dishTypeId'],
+      dishType: json['dishType'],
     );
   }
 
@@ -58,14 +71,19 @@ class Dish {
       'updatedDate': updatedDate?.toIso8601String(),
       'name': name,
       'description': description,
-      'images': images,
+      'images': _encodeBase64(images),
       'urlSlug': urlSlug,
       'price': price,
       'rating': rating,
       'tags': tags,
       'quantityLeft': quantityLeft,
       'requestedQuantity': requestedQuantity,
-      'dishTypeId': dishTypeId,
+      'dishType': dishType?.toString().split('.').last,
     };
+  }
+
+  static String? _encodeBase64(Uint8List? uint8List) {
+    if (uint8List == null || uint8List.isEmpty) return null;
+    return base64.encode(uint8List);
   }
 }

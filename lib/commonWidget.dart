@@ -130,7 +130,9 @@ class CustomerDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.percent),
             title: const Text('Discounts'),
-            onTap: () {},
+            onTap: () {
+              Navigator.pushNamed(context, '/discounts');
+            },
           ),
           ListTile(
             leading: const Icon(Icons.monetization_on),
@@ -167,7 +169,6 @@ class CustomerDrawer extends StatelessWidget {
     );
   }
 }
-
 
 class AdminDrawer extends StatelessWidget {
   const AdminDrawer({
@@ -227,24 +228,30 @@ class AdminDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.percent),
             title: const Text('Discounts'),
-            onTap: () {},
+            onTap: () {
+              Navigator.pushNamed(context, '/discounts');
+            },
           ),
           ListTile(
             leading: const Icon(Icons.monetization_on),
             title: const Text('Balance'),
             onTap: () {
+              Navigator.pushNamed(context, "/adminBalance");
             },
           ),
           ListTile(
             leading: const Icon(Icons.local_pizza),
             title: const Text('Orders'),
             onTap: () {
+              Navigator.pushNamed(context, '/allOrdes');
             },
           ),
           ListTile(
             leading: const Icon(Icons.document_scanner),
             title: const Text('Generate Reports'),
             onTap: () {
+              Navigator.pushNamed(context, '/report');
+
             },
           ),
           ListTile(
@@ -254,14 +261,13 @@ class AdminDrawer extends StatelessWidget {
               Navigator.pushNamed(context, '/profile');
             },
           ),
-          
           ListTile(
             leading: const Icon(Icons.person_4),
-            title: const Text('Create User'),
+            title: const Text('All User'),
             onTap: () {
+              Navigator.pushNamed(context, "/allUser");
             },
           ),
-          
           const Divider(),
           ListTile(
             leading: const Icon(Icons.exit_to_app),

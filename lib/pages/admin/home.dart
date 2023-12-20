@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hungry_iubian/commonWidget.dart';
+import 'package:hungry_iubian/constants/constants.dart';
 import 'package:hungry_iubian/cubits/session.dart';
+import 'package:responsive_builder/responsive_builder.dart';
 
 class AdminHome extends StatefulWidget {
   const AdminHome({super.key});
@@ -13,25 +14,37 @@ class AdminHome extends StatefulWidget {
 class _AdminHomeState extends State<AdminHome> {
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SessionCubit, Session>(builder: (context, state) {
-      if (state is SessionValue) {
-        return Scaffold(
-          appBar: CustomeAppBar(
-            userName: state.user.userName,
-          ),
-          drawer: AdminDrawer(
-            username: state.user.userName,
-            email: state.user.email as String,
-          ),
-          body: Center(
-            child: Text("Welcome To Admin panel"),
-            ),
-        );
-      }
-      if (state is SessionValue) {
-        Navigator.pushNamed(context, "/");
-      }
-      return const Scaffold();
-    });
+    return BlocBuilder<SessionCubit, Session>(
+      builder: (context, state) {
+        if (state is SessionValue) {
+          return DashboardSkeleton(
+              body: ResponsiveBuilder(
+                builder: (context, sizingInformation) {
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      top: sizingInformation.screenSize.height * 0.1,
+                    ),
+                    child: Center(
+                      child: Text(
+                        "Welcome To Admin panel",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: (sizingInformation.screenSize.width < 767)
+                              ? 24
+                              : 48,
+                          color: Colors.blueGrey,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              user: state.user);
+        } else if (state is SessionValue) {
+          Navigator.pushNamed(context, "/");
+        }
+        return const Scaffold();
+      },
+    );
   }
 }

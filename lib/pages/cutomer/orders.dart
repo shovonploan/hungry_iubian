@@ -1,12 +1,12 @@
-
 import 'package:collection/collection.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
-import 'package:hungry_iubian/commonWidget.dart';
+import 'package:hungry_iubian/constants/constants.dart';
 import 'package:hungry_iubian/cubits/session.dart';
 import 'package:hungry_iubian/models/orderInfo.dart';
+import 'package:responsive_builder/responsive_builder.dart';
 
 class CustomerOrders extends StatefulWidget {
   const CustomerOrders({super.key});
@@ -45,27 +45,24 @@ class _CustomerOrdersState extends State<CustomerOrders> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SessionCubit, Session>(builder: (context, state) {
-      if (state is SessionValue) {
-        getOrder(state.user.userId as int);
-        return Scaffold(
-          appBar: CustomeAppBar(
-            userName: state.user.userName,
-          ),
-          drawer: CustomerDrawer(
-            username: state.user.userName,
-            email: state.user.email as String,
-          ),
-          body: ListView.builder(
-              itemCount: orders.length,
-              itemBuilder: (ctx, idx) => foodCard(orders[idx])),
-        );
-      }
-      if (state is SessionValue) {
-        Navigator.pushNamed(context, "/");
-      }
-      return const Scaffold();
-    });
+    return BlocBuilder<SessionCubit, Session>(
+      builder: (context, state) {
+        if (state is SessionValue) {
+          return DashboardSkeleton(
+              body: ResponsiveBuilder(
+                builder: (context, sizingInformation) {
+                  return ListView.builder(
+                      itemCount: orders.length,
+                      itemBuilder: (ctx, idx) => foodCard(orders[idx]));
+                },
+              ),
+              user: state.user);
+        } else if (state is SessionValue) {
+          Navigator.pushNamed(context, "/");
+        }
+        return const Scaffold();
+      },
+    );
   }
 
   Widget foodCard(List<OrderInfo> order) {
@@ -106,7 +103,7 @@ class _CustomerOrdersState extends State<CustomerOrders> {
                       // Iterate through each order and display order details
                       for (OrderInfo orderItem in order)
                         Text(
-                          'Name: ${orderItem.name}\nQuantity: ${orderItem.quantity}',
+                          'Name: ${orderItem.dishName}\nQuantity: ${orderItem.quantity}',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                           ),
@@ -154,7 +151,7 @@ class _CustomerOrdersState extends State<CustomerOrders> {
   double calculateTotal(List<OrderInfo> order) {
     // Replace this with your actual logic to calculate the total amount
     return order
-        .map((orderItem) => orderItem.price * orderItem.quantity)
+        .map((orderItem) => orderItem.dishPrice * (orderItem.quantity as int))
         .reduce((a, b) => a + b);
   }
 
